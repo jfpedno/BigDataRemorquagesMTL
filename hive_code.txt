@@ -1,0 +1,282 @@
+CREATE TABLE tempMtl2019 (
+JOUR DATE,
+MAX_TEMPERATURE_C INT,
+MIN_TEMPERATURE_C INT,
+WINDSPEED_MAX_KMH INT,
+TEMPERATURE_MORNING_C INT,
+TEMPERATURE_NOON_C INT,
+TEMPERATURE_EVENING_C INT,
+PRECIP_TOTAL_DAY_MM FLOAT,
+HUMIDITY_MAX_PERCENT INT,
+VISIBILITY_AVG_KM FLOAT,
+PRESSURE_MAX_MB INT,
+CLOUDCOVER_AVG_PERCENT FLOAT,
+HEATINDEX_MAX_C INT,
+DEWPOINT_MAX_C INT,
+WINDTEMP_MAX_C INT,
+WEATHER_CODE_MORNING INT,
+WEATHER_CODE_NOON INT,
+WEATHER_CODE_EVENING INT,
+TOTAL_SNOW_MM FLOAT,
+UV_INDEX INT,
+SUNHOUR FLOAT,
+OPINION STRING) 
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+
+CREATE TABLE remorquages (
+DATE_ORIGINE STRING,
+LONGITUDE_ORIGINE STRING,
+LATITUDE_ORIGINE STRING,
+RUE_ORIGINE STRING,
+SECTEUR_ORIGINE STRING,
+ARRONDISSEMENT_ORIGINE STRING,
+DATE_DESTINATION STRING,
+LONGITUDE_DESTINATION STRING,
+LATITUDE_DESTINATION STRING,
+RUE_DESTINATION STRING,
+SECTEUR_DESTINATION STRING,
+ARRONDISSEMENT_DESTINATION STRING,
+MOTIF_REMORQUAGE STRING) 
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+_______________________________________________________________________________________________________________________
+
+load data local inpath '/home/cloudera/Documents/python/Data/remorquages.csv' OVERWRITE INTO TABLE remorquages;
+load data local inpath '/home/cloudera/Documents/python/Data/export-montreal2019.csv' OVERWRITE INTO TABLE tempmtl2019;
+DESCRIBE remorquages;
+DESCRIBE tempmtl2019;
+_______________________________________________________________________________________________________________________
+
+Journée avec chute de neige de plus de 3 cm et temp en dessous de 0 C :
+
+SELECT jour, total_snow_mm, max_temperature_c 
+FROM tempmtl2019 
+WHERE total_snow_mm > 2.00 
+AND max_temperature_c <= 0 
+ORDER BY current_date();
+
+   jour		     neige cm		temp
+
+2019-01-30	7.4000000000000004	-6	
+2019-01-29	6.4000000000000004	-6	
+2019-01-27	4.2999999999999998	-4	
+2019-01-23	4.9000000000000004	-4	
+2019-01-20	9.5			-16	
+2019-01-09	8.1999999999999993	-1	
+2019-01-03	3.3999999999999999	-5	
+_______________________________________________________________________________________________________________________
+
+Remorquages total par date :
+
+SELECT count(*) FROM remorquages WHERE motif_remorquage LIKE "%Constat d'infraction%"
+AND CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019 
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 01 
+AND CAST (SUBSTR(date_origine, 10, 2) as INT) = 04;
+
+total remorquages 4 janvier 2019
+
+828
+________________________________________________________________________________________________________________________
+
+Remorquages total pour tous les mois pour une année :
+
+SELECT motif_remorquage, SUBSTR(date_origine, 2, 4) AS an, SUBSTR(date_origine, 07, 2) AS mois, count(*) 
+AS nombre FROM remorquages
+WHERE motif_remorquage LIKE "%Constat d'infraction%"
+AND CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 01
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 02
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 03
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 04
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 05
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 06
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 07
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 08
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 09
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 10
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 11
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 12
+GROUP BY motif_remorquage, SUBSTR(date_origine, 2, 4), SUBSTR(date_origine, 07, 2)
+ORDER BY nombre DESC;
+
+motif_remorquage		année	mois	nombre
+		
+"Constat d'infraction"		2019	01	23025	
+"Constat d'infraction"		2019	02	22315	
+"Constat d'infraction"		2019	03	7810	
+"Constat d'infraction"		2019	11	7510	
+"Constat d'infraction"		2019	09	710	
+"Constat d'infraction"		2019	06	560	
+"Constat d'infraction"		2019	10	521	
+"Remis au propriétaire"		2019	02	468	
+"Constat d'infraction"		2019	07	430	
+"Constat d'infraction"		2019	08	412	
+"Constat d'infraction"		2019	05	314	
+"Déplacement non autorisé"	2019	02	284	
+"Constat d'infraction"		2019	12	222	
+"Autre"				2019	02	201	
+"Constat d'infraction"		2019	04	184	
+"Remis au propriétaire"		2019	03	176	
+"Déplacement non autorisé"	2019	03	101	
+"Remis au propriétaire"		2019	11	98	
+"Autre"				2019	11	85	
+"Déplacement non autorisé"	2019	11	84	
+"Événement policier"		2019	11	81	
+"Autre"				2019	03	68	
+"Autre"				2019	10	20	
+				2019	11	20	
+"Autre"				2019	09	18	
+"Remis au propriétaire"		2019	08	16	
+"Autre"				2019	06	15	
+"Événement policier"		2019	02	14	
+"Remis au propriétaire"		2019	06	13	
+"Autre"				2019	08	13	
+"Événement policier"		2019	10	12	
+"Remis au propriétaire"		2019	09	12	
+"Autre"				2019	07	11	
+"Déplacement non autorisé"	2019	08	11	
+"Événement policier"		2019	08	10	
+"Autre"				2019	04	8	
+"Remis au propriétaire"		2019	07	8	
+"Autre"				2019	05	6	
+"Remis au propriétaire"		2019	04	6	
+"Autre"				2019	12	6	
+"Remis au propriétaire"		2019	10	5	
+"Remis au propriétaire"		2019	12	5	
+"Événement policier"		2019	03	5	
+"Événement policier"		2019	12	4	
+"Événement policier"		2019	06	4	
+"Événement policier"		2019	04	4	
+"Déplacement non autorisé"	2019	09	4	
+				2019	02	4	
+"Déplacement non autorisé"	2019	07	3	
+"Remis au propriétaire"		2019	05	3	
+"Événement policier"		2019	05	3	
+"Déplacement non autorisé"	2019	10	2	
+"Événement policier"		2019	09	2	
+				2019	07	2	
+"Déplacement non autorisé"	2019	05	2	
+"Déplacement non autorisé"	2019	12	1	
+"Événement policier"		2019	07	1	
+				2019	06	1	
+________________________________________________________________________________________________________________________
+
+Remorquages total par mois pour une année :
+
+SELECT count(*) FROM remorquages WHERE motif_remorquage LIKE "%Constat d'infraction%"
+AND CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 01;
+
+total remorquages janvier 2019
+
+23025	
+________________________________________________________________________________________________________________________
+
+Remorquages total par arrondissement pour une année (2019)
+
+SELECT arrondissement_origine, count(*) AS nombre FROM remorquages 
+WHERE motif_remorquage LIKE "%Constat d'infraction%" 
+AND CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+GROUP BY arrondissement_origine
+ORDER BY nombre DESC; 
+
+ arrondissement_origine				total
+
+"Ville-Marie"					8176	
+"Plateau-Mont-Royal"				7895	
+"Côte-des-Neiges - Notre-Dame-de-Grâce"		6842	
+"Mercier - Hochelaga-Maisonneuve"		5739	
+"Rosemont - La Petite-Patrie"			5685	
+"Villeray - Saint-Michel - Parc-Extension"	5457	
+"Ahuntsic - Cartierville"			5037	
+"Sud-Ouest"					4087	
+"Montréal-Nord"					2428	
+"LaSalle"					2065	
+"Saint-Léonard"					1945	
+"Verdun"					1930	
+"Saint-Laurent"					1841	
+"Rivière-des-Prairies - Pointe-aux-Trembles"	1498	
+"Lachine"					1224	
+"Outremont"					1067	
+"Anjou"						932	
+						165	
+
+________________________________________________________________________________________________________________________
+
+SELECT motif_remorquage, SUBSTR(date_origine, 2, 4) AS an, count(*) 
+AS nombre FROM remorquages
+WHERE motif_remorquage LIKE "%Constat d'infraction%"
+AND CAST(SUBSTR(date_origine, 2, 4) as INT) = 2020
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2018
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2017
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2016
+OR CAST(SUBSTR(date_origine, 2, 4) as INT) = 2015
+GROUP BY motif_remorquage, SUBSTR(date_origine, 2, 4)
+ORDER BY an DESC;
+
+"Constat d'infraction"		2020	18538	
+"Événement policier"		2019	173	
+"Remis au propriétaire"		2019	1333	
+"Déplacement non autorisé"	2019	632	
+"Constat d'infraction"		2019	64013	
+"Autre"				2019	747	
+				2019	30	
+"Constat d'infraction"		2018	42285	
+"Événement policier"		2018	78	
+				2018	71	
+"Déplacement non autorisé"	2018	171	
+"Autre"				2018	446	
+"Remis au propriétaire"		2018	998	
+"Remis au propriétaire"		2017	984	
+"Déplacement non autorisé"	2017	229	
+				2017	29	
+"Constat d'infraction"		2017	51126	
+"Autre"				2017	598	
+"Événement policier"		2017	69	
+				2016	20	
+"Remis au propriétaire"		2016	250	
+"Autre"				2016	188	
+"Constat d'infraction"		2016	37550	
+"Événement policier"		2016	109	
+"Déplacement non autorisé"	2016	290	
+"Constat d'infraction"		2015	1672	
+				2015	1	
+"Déplacement non autorisé"	2015	19	
+"Événement policier"		2015	12	
+
+_________________________________________________________________________________________________________________
+
+Remorquages total par année:
+
+SELECT count(*) FROM remorquages WHERE motif_remorquage LIKE "%Constat d'infraction%"
+AND CAST(SUBSTR(date_origine, 2, 4) as INT) = 2019;
+
+Remorquages total 2019
+
+64013  notez la différence avec MRJob "2019"  64042 ?	
+
+________________________________________________________________________________________________________________________
+
+Remorquages total par rue par date:
+
+SELECT count(*) FROM remorquages 
+WHERE motif_remorquage LIKE "%Constat d'infraction%"
+AND rue_origine LIKE "%boulevard Mont-Royal %"
+AND CAST (SUBSTR(date_origine, 2, 4) as INT) = 2020
+AND CAST (SUBSTR(date_origine, 07, 2) as INT) = 01
+AND CAST (SUBSTR(date_origine, 10, 2) as INT) = 13;
+
+Remorquages total boulevard Mont-Royal 13 janvier 2020 N.B. Journée ou je me suis fait remorqué et ou il y avait un problème de signalisation :)
+
+5

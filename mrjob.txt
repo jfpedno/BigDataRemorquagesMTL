@@ -1,0 +1,215 @@
+from mrjob.job import MRJob
+
+class ChuteDeNeigeMax(MRJob):
+    
+    def mapper(self, champs, line):
+        champs = line.split(',')
+        if(float(champs[18]))>3.0:
+            print (champs[0],champs[18])
+            yield None,(float(champs[18]),champs[0])
+            
+    def reducer(self, _, total_snow):
+        yield max(total_snow)
+        
+if __name__ == '__main__':
+    ChuteDeNeigeMax.run()
+
+MRJob journéees de plus de 3 cm de chute de neige en 2019:
+    Date	Centimètres
+
+('2019-01-01', '10.1')
+('2019-01-03', '3.4')
+('2019-01-08', '3.4')
+('2019-01-09', '8.2')
+('2019-01-20', '9.5')
+('2019-01-23', '4.9')
+('2019-01-24', '8.5')
+('2019-01-27', '4.3')
+('2019-01-29', '6.4')
+('2019-01-30', '7.4')
+('2019-02-12', '4.2')
+('2019-02-13', '38.8')
+('2019-02-21', '8.3')
+('2019-03-04', '3.1')
+('2019-03-10', '12.9')
+('2019-03-11', '3.1')
+('2019-03-23', '7.9')
+('2019-03-24', '4.3')
+('2019-04-09', '6.5')
+('2019-11-07', '8.8')
+('2019-11-11', '3.8')
+('2019-11-12', '21.1')
+('2019-11-20', '4.1')
+('2019-12-05', '4.1')
+('2019-12-30', '13.3')
+('2019-12-31', '9')
+
+Journée avec chute de neige la plus importante:
+
+Streaming final output from /tmp/ChuteDeNeigeMax.cloudera.20200229.134227.358652/output...
+38.8    "2019-02-13"
+______________________________________________________________________________________________
+
+from mrjob.job import MRJob
+from mrjob.step import MRStep
+
+class RemorquagesParDateMax(MRJob):
+    
+    def steps(self):
+        return [
+            MRStep(mapper=self.mapperNbrChampsParLigne,
+                   reducer=self.reducerNbrRemorquagesParJour),
+            MRStep(mapper=self.mapper_passthrough,
+                   reducer = self.reducer_find_max)
+        ]
+    def mapperNbrChampsParLigne(self, Champs, ligne):
+        champs = ligne.split(',')       
+        #operation de split prcq format date = YYYY-MM-DDT00:00:00
+        date=champs[0].split('T')
+        #operation de split prcq les datas ont des "" et impossible de faire sortir un resultat sans les enlever au prealable 
+        date[0]=date[0].replace('"','')
+        champs[12]=champs[12].replace('"','')
+        #operation de split pour obtenir an separes pour la condition
+        dateSplit=date[0].split('-')
+        #changer la date ici au choix en correlation avec les chutes de neige
+        if dateSplit[0]=="2019" and "Constat d'infraction"==champs[12]:
+            yield date[0],1        
+
+    def reducerNbrRemorquagesParJour(self, jour, remorquages):
+        #print(jour, sum(remorquages))
+        yield None, (sum(remorquages), jour) 
+        
+    def mapper_passthrough(self, _, sumRemorquagesParJour):
+        #print(sumRemorquagesParJour)
+        yield _, sumRemorquagesParJour
+        
+    def reducer_find_max(self, _, sumRemorquagesParJour):
+        yield max(sumRemorquagesParJour)        
+        
+if __name__ == '__main__':
+    RemorquagesParDateMax.run()        
+
+Journée 2019 avec le plus de remorquages:
+
+Running step 1 of 2...
+Running step 2 of 2...
+Streaming final output from /tmp/RemorquagesParDateMax.cloudera.20200229.231024.206879/output...
+3068    "2019-01-10"
+Removing temp directory /tmp/RemorquagesParDateMax.cloudera.20200229.231024.206879...
+______________________________________________________________________________________________
+
+from mrjob.job import MRJob
+
+class RemorquagesParMoisParAn(MRJob):
+     
+    def mapper(self, Champs, ligne):
+        champs = ligne.split(',')
+        #operation de split prcq format date = YYYY-MM-DDT00:00:00
+        date=champs[0].split('T')
+        #operation de split prcq les datas ont des "" et impossible de faire sortir un resultat sans les enlever au prealable 
+        date[0]=date[0].replace('"','')
+        champs[12]=champs[12].replace('"','')
+        #operation de split pour obtenir date et mois separes pour le reducer
+        dateSplit=date[0].split('-')
+        if champs[12] == "Constat d'infraction":
+            yield (dateSplit[0]+"-"+dateSplit[1]),1       
+
+    def reducer(self, an_mois, remorquages):
+        yield an_mois, sum(remorquages)
+              
+if __name__ == '__main__':
+    RemorquagesParMoisParAn.run()  
+
+Remorquages total pour chaque mois par année:
+
+Streaming final output from /tmp/RemorquagesParMoisParAn.cloudera.20200229.154820.121597/output...
+Année+mois      total
+
+Streaming final output from /tmp/RemorquagesParMoisParAn.cloudera.20200229.221124.224645/output...
+"2015-11"       71
+"2015-12"       1601
+"2016-01"       12401
+"2016-02"       6023
+"2016-03"       6042
+"2016-04"       200
+"2016-05"       116
+"2016-06"       473
+"2016-07"       191
+"2016-08"       26
+"2016-09"       466
+"2016-10"       330
+"2016-11"       253
+"2016-12"       10794
+"2017-01"       10306
+"2017-02"       17815
+"2017-03"       6027
+"2017-04"       179
+"2017-05"       263
+"2017-06"       442
+"2017-07"       269
+"2017-08"       392
+"2017-09"       478
+"2017-10"       332
+"2017-11"       284
+"2017-12"       14339
+"2018-01"       18083
+"2018-02"       12328
+"2018-03"       8938
+"2018-04"       173
+"2018-05"       226
+"2018-06"       504
+"2018-07"       197
+"2018-08"       363
+"2018-09"       626
+"2018-10"       342
+"2018-11"       379
+"2018-12"       126
+"2019-01"       23025
+"2019-02"       22315
+"2019-03"       7810
+"2019-04"       184
+"2019-05"       314
+"2019-06"       560
+"2019-07"       430
+"2019-08"       412
+"2019-09"       710
+"2019-10"       521
+"2019-11"       7539
+"2019-12"       222
+"2020-01"       20215
+"2020-02"       6133
+Removing temp directory /tmp/RemorquagesParMoisParAn.cloudera.20200229.221124.224645...
+______________________________________________________________________________________________
+
+from mrjob.job import MRJob
+
+class RemorquagesParAn(MRJob):
+     
+    def mapper(self, Champs, ligne):
+        champs = ligne.split(',')
+        #operation de split prcq format date = YYYY-MM-DDT00:00:00
+        date=champs[0].split('T')
+        #operation de split prcq les datas ont des "" et impossible de faire sortir un résultat sans les enlever au préalable 
+        date[0]=date[0].replace('"','')
+        champs[12]=champs[12].replace('"','')
+        #operation de split pour obtenir an separes pour le reducer
+        dateSplit=date[0].split('-')
+        if champs[12] == "Constat d'infraction":
+            yield dateSplit[0],1       
+
+    def reducer(self, an, remorquages):
+        yield an, sum(remorquages)
+              
+if __name__ == '__main__':
+
+Remorquages total par année:
+
+Streaming final output from /tmp/RemorquagesParAn.cloudera.20200229.214802.054683/output...
+"2015"  1672
+"2016"  37550
+"2017"  51126
+"2018"  42285
+"2019"  64042
+"2020"  26348
+Removing temp directory /tmp/RemorquagesParAn.cloudera.20200229.214802.054683...
+______________________________________________________________________________________________
